@@ -1,5 +1,4 @@
 from typing import List
-
 import nest_asyncio
 import streamlit as st
 from phi.assistant import Assistant
@@ -18,7 +17,6 @@ st.set_page_config(
 )
 st.title("LLM OS")
 st.markdown("##### :orange_heart: built using [phidata](https://github.com/phidatahq/phidata)")
-
 
 def main() -> None:
     # Get LLM Model
@@ -286,7 +284,6 @@ def main() -> None:
     if st.sidebar.button("New Run"):
         restart_assistant()
 
-
 def restart_assistant():
     logger.debug("---*--- Restarting Assistant ---*---")
     st.session_state["llm_os"] = None
@@ -296,6 +293,5 @@ def restart_assistant():
     if "file_uploader_key" in st.session_state:
         st.session_state["file_uploader_key"] += 1
     st.rerun()
-
 
 main()
