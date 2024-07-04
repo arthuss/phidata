@@ -1,8 +1,7 @@
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from textwrap import dedent
-from typing import List
 
 from phi.assistant import Assistant
 from phi.tools import Toolkit
@@ -26,7 +25,6 @@ cwd = Path(__file__).parent.resolve()
 scratch_dir = cwd.joinpath("scratch")
 if not scratch_dir.exists():
     scratch_dir.mkdir(exist_ok=True, parents=True)
-
 
 def get_llm_os(
     llm_id: str = "gpt-4o",
@@ -146,7 +144,6 @@ def get_llm_os(
             """
             ),
             tools=[ExaTools(num_results=5, text_length_limit=1000)],
-            # This setting tells the LLM to format messages in markdown
             markdown=True,
             add_datetime_to_instructions=True,
             debug_mode=debug_mode,
@@ -159,7 +156,7 @@ def get_llm_os(
     if investment_assistant:
         _investment_assistant = Assistant(
             name="Investment Assistant",
-            role="Write a investment report on a given company (stock) symbol",
+            role="Write an investment report on a given company (stock) symbol",
             llm=OpenAIChat(model=llm_id),
             description="You are a Senior Investment Analyst for Goldman Sachs tasked with writing an investment report for a very important client.",
             instructions=[
@@ -209,7 +206,6 @@ def get_llm_os(
             """
             ),
             tools=[YFinanceTools(stock_price=True, company_info=True, analyst_recommendations=True, company_news=True)],
-            # This setting tells the LLM to format messages in markdown
             markdown=True,
             add_datetime_to_instructions=True,
             debug_mode=debug_mode,
@@ -220,7 +216,7 @@ def get_llm_os(
                 "To get an investment report on a stock, delegate the task to the `Investment Assistant`. "
                 "Return the report in the <report_format> to the user without any additional text like 'here is the report'.",
                 "Answer any questions they may have using the information in the report.",
-                "Never provide investment advise without the investment report.",
+                "Never provide investment advice without the investment report.",
             ]
         )
 
@@ -232,10 +228,10 @@ def get_llm_os(
         llm=OpenAIChat(model=llm_id),
         description=dedent(
             """\
-        You are the most advanced AI system in the world called `LLM-OS`.
-        You have access to a set of tools and a team of AI Assistants at your disposal.
-        Your goal is to assist the user in the best way possible.\
-        """
+            You are the most advanced AI system in the world called `LLM-OS`.
+            You have access to a set of tools and a team of AI Assistants at your disposal.
+            Your goal is to assist the user in the best way possible.\
+            """
         ),
         instructions=[
             "When the user sends a message, first **think** and determine if:\n"
@@ -245,51 +241,38 @@ def get_llm_os(
             " - You need to delegate the task to a team member\n"
             " - You need to ask a clarifying question",
             "If the user asks about a topic, first ALWAYS search your knowledge base using the `search_knowledge_base` tool.",
-            "If you dont find relevant information in your knowledge base, use the `duckduckgo_search` tool to search the internet.",
+            "If you don't find relevant information in your knowledge base, use the `duckduckgo_search` tool to search the internet.",
             "If the user asks to summarize the conversation or if you need to reference your chat history with the user, use the `get_chat_history` tool.",
-            "If the users message is unclear, ask clarifying questions to get more information.",
+            "If the user's message is unclear, ask clarifying questions to get more information.",
             "Carefully read the information you have gathered and provide a clear and concise answer to the user.",
             "Do not use phrases like 'based on my knowledge' or 'depending on the information'.",
-            "You can delegate tasks to an AI Assistant in your team depending of their role and the tools available to them.",
+            "You can delegate tasks to an AI Assistant in your team depending on their role and the tools available to them.",
         ],
         extra_instructions=extra_instructions,
-        # Add long-term memory to the LLM OS backed by a PostgreSQL database
         storage=PgAssistantStorage(table_name="llm_os_runs", db_url=db_url),
-        # Add a knowledge base to the LLM OS
         knowledge_base=AssistantKnowledge(
             vector_db=PgVector2(
                 db_url=db_url,
                 collection="llm_os_documents",
-                embedder=OpenAIEmbedder(model="text-embedding-3-small", dimensions=1536),
+                embedder=OpenAIEmbedder(model="text-embedding-ada-002", dimensions=1536),
             ),
-            # 3 references are added to the prompt when searching the knowledge base
             num_documents=3,
         ),
-        # Add selected tools to the LLM OS
         tools=tools,
-        # Add selected team members to the LLM OS
         team=team,
-        # Show tool calls in the chat
         show_tool_calls=True,
-        # This setting gives the LLM a tool to search the knowledge base for information
         search_knowledge=True,
-        # This setting gives the LLM a tool to get chat history
         read_chat_history=True,
-        # This setting adds chat history to the messages
         add_chat_history_to_messages=True,
-        # This setting adds 6 previous messages from chat history to the messages sent to the LLM
         num_history_messages=6,
-        # This setting tells the LLM to format messages in markdown
         markdown=True,
-        # This setting adds the current datetime to the instructions
         add_datetime_to_instructions=True,
-        # Add an introductory Assistant message
         introduction=dedent(
             """\
-        Hi, I'm your LLM OS.
-        I have access to a set of tools and AI Assistants to assist you.
-        Let's solve some problems together!\
-        """
+            Hi, I'm your LLM OS.
+            I have access to a set of tools and AI Assistants to assist you.
+            Let's solve some problems together!\
+            """
         ),
         debug_mode=debug_mode,
     )
